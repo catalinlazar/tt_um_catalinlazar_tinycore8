@@ -75,10 +75,10 @@ async def counter_test(dut):
     await load_program_and_run(dut, [0x10, 0x00, 0x80, 0xB0, 0x92])
 
     await ClockCycles(dut.clk, 10)
-    assert int(dut.uo_out.value) == 0x00
-
-    await ClockCycles(dut.clk, 6)
     assert int(dut.uo_out.value) == 0x01
 
     await ClockCycles(dut.clk, 6)
     assert int(dut.uo_out.value) == 0x02
+
+    await ClockCycles(dut.clk, 6)
+    assert int(dut.uo_out.value) == 0x03

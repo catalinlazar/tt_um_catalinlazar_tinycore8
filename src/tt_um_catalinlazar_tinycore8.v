@@ -12,6 +12,8 @@ module tt_um_catalinlazar_tinycore8 (
     assign uio_out = 8'b0;
     assign uio_oe  = 8'b0;
 
+    wire _unused = &{1'b0, uio_in, shift[7], 1'b0};
+
     reg [7:0] regs [0:7];
     reg [7:0] pmem [0:15];
 
@@ -179,6 +181,9 @@ module tt_um_catalinlazar_tinycore8 (
                             default: begin
                                 state <= S_FETCH;
                             end
+                    	    default: begin
+                        	state <= S_FETCH;
+                    	    end
                         endcase
                     end
 
