@@ -1,0 +1,3 @@
+LDI R0, 0xA5
+OUT R0
+HALT
