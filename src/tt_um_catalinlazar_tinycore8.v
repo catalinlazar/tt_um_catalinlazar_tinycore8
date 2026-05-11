@@ -1,3 +1,5 @@
+`default_nettype none
+
 module tt_um_catalinlazar_tinycore8 (
     input  wire [7:0] ui_in,
     output wire [7:0] uo_out,
@@ -9,10 +11,8 @@ module tt_um_catalinlazar_tinycore8 (
     input  wire       rst_n
 );
 
-    assign uio_out = 8'b0;
-    assign uio_oe  = 8'b0;
-
-    wire _unused = &{1'b0, uio_in, shift[7], 1'b0};
+    assign uio_out = 8'b0000_0000;
+    assign uio_oe  = 8'b0000_0000;
 
     reg [7:0] regs [0:7];
     reg [7:0] pmem [0:15];
@@ -38,7 +38,7 @@ module tt_um_catalinlazar_tinycore8 (
     wire run      = ui_in[3];
 
     reg [2:0] load_sync;
-    wire load_rise = load_sync[2:1] == 2'b01;
+    wire load_rise = (load_sync[2:1] == 2'b01);
 
     reg [7:0] shift;
     reg [2:0] bitcnt;
@@ -50,6 +50,9 @@ module tt_um_catalinlazar_tinycore8 (
     wire [2:0] rsel   = instr[3:1];
     wire       mode   = instr[0];
     wire [3:0] addr4  = instr[3:0];
+
+    // Keep Verilator/lint happy for intentionally unused signals/bits.
+    wire _unused = &{1'b0, uio_in, shift[7], load_dat, 1'b0};
 
     always @(posedge clk) begin
         if (!rst_n) begin
@@ -65,11 +68,13 @@ module tt_um_catalinlazar_tinycore8 (
             bitcnt    <= 3'd0;
             load_addr <= 4'd0;
 
-            for (i = 0; i < 8; i = i + 1)
+            for (i = 0; i < 8; i = i + 1) begin
                 regs[i] <= 8'd0;
+            end
 
-            for (i = 0; i < 16; i = i + 1)
+            for (i = 0; i < 16; i = i + 1) begin
                 pmem[i] <= 8'd0;
+            end
         end else begin
             load_sync <= {load_sync[1:0], load_clk};
 
@@ -84,11 +89,12 @@ module tt_um_catalinlazar_tinycore8 (
 
                     if (bitcnt == 3'd7) begin
                         pmem[load_addr] <= {shift[6:0], load_dat};
-                        load_addr <= load_addr + 4'd1;
+                        load_addr       <= load_addr + 4'd1;
                     end
                 end
             end else if (run && ena && !halted) begin
                 case (state)
+
                     S_FETCH: begin
                         instr <= pmem[pc];
                         pc    <= pc + 4'd1;
@@ -97,6 +103,7 @@ module tt_um_catalinlazar_tinycore8 (
 
                     S_EXEC: begin
                         case (opcode)
+
                             4'h0: begin
                                 state <= S_FETCH;
                             end
@@ -107,11 +114,11 @@ module tt_um_catalinlazar_tinycore8 (
                             end
 
                             4'h2: begin
-                                if (mode)
+                                if (mode) begin
                                     regs[rsel] <= regs[0];
-                                else
+                                end else begin
                                     regs[0] <= regs[rsel];
-
+                                end
                                 state <= S_FETCH;
                             end
 
@@ -156,8 +163,9 @@ module tt_um_catalinlazar_tinycore8 (
                             end
 
                             4'hA: begin
-                                if (zero)
+                                if (zero) begin
                                     pc <= addr4;
+                                end
                                 state <= S_FETCH;
                             end
 
@@ -181,9 +189,7 @@ module tt_um_catalinlazar_tinycore8 (
                             default: begin
                                 state <= S_FETCH;
                             end
-                    	    default: begin
-                        	state <= S_FETCH;
-                    	    end
+
                         endcase
                     end
 
@@ -193,9 +199,16 @@ module tt_um_catalinlazar_tinycore8 (
                         pc            <= pc + 4'd1;
                         state         <= S_FETCH;
                     end
+
+                    default: begin
+                        state <= S_FETCH;
+                    end
+
                 endcase
             end
         end
     end
 
 endmodule
+
+`default_nettype wire
