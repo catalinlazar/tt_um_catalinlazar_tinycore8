@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ns/1ps
 
 module tb;
 
@@ -11,7 +12,16 @@ module tb;
   wire [7:0] uio_out;
   wire [7:0] uio_oe;
 
+`ifdef GL_TEST
+  wire VPWR = 1'b1;
+  wire VGND = 1'b0;
+`endif
+
   tt_um_catalinlazar_tinycore8 dut (
+`ifdef GL_TEST
+    .VPWR(VPWR),
+    .VGND(VGND),
+`endif
     .ui_in  (ui_in),
     .uo_out (uo_out),
     .uio_in (uio_in),
