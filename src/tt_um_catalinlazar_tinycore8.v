@@ -15,9 +15,9 @@ module tt_um_catalinlazar_tinycore8 (
     assign uio_oe  = 8'b0000_0000;
 
     reg [7:0] regs [0:7];
-    reg [7:0] pmem [0:15];
+    reg [7:0] pmem [0:7];
 
-    reg [3:0] pc;
+    reg [2:0] pc;
     reg [7:0] instr;
     reg [7:0] out_reg;
     reg       halted;
@@ -42,21 +42,20 @@ module tt_um_catalinlazar_tinycore8 (
 
     reg [7:0] shift;
     reg [2:0] bitcnt;
-    reg [3:0] load_addr;
+    reg [2:0] load_addr;
 
     integer i;
 
     wire [3:0] opcode = instr[7:4];
     wire [2:0] rsel   = instr[3:1];
     wire       mode   = instr[0];
-    wire [3:0] addr4  = instr[3:0];
+    wire [2:0] addr3  = instr[2:0];
 
-    // Keep Verilator/lint happy for intentionally unused signals/bits.
-    wire _unused = &{1'b0, uio_in, shift[7], load_dat, 1'b0};
+    wire _unused = &{1'b0, uio_in, shift[7], load_dat, instr[3], 1'b0};
 
     always @(posedge clk) begin
         if (!rst_n) begin
-            pc        <= 4'd0;
+            pc        <= 3'd0;
             instr     <= 8'd0;
             out_reg   <= 8'd0;
             halted    <= 1'b0;
@@ -66,13 +65,13 @@ module tt_um_catalinlazar_tinycore8 (
             load_sync <= 3'd0;
             shift     <= 8'd0;
             bitcnt    <= 3'd0;
-            load_addr <= 4'd0;
+            load_addr <= 3'd0;
 
             for (i = 0; i < 8; i = i + 1) begin
                 regs[i] <= 8'd0;
             end
 
-            for (i = 0; i < 16; i = i + 1) begin
+            for (i = 0; i < 8; i = i + 1) begin
                 pmem[i] <= 8'd0;
             end
         end else begin
@@ -80,7 +79,7 @@ module tt_um_catalinlazar_tinycore8 (
 
             if (load_en) begin
                 halted <= 1'b0;
-                pc     <= 4'd0;
+                pc     <= 3'd0;
                 state  <= S_FETCH;
 
                 if (load_rise) begin
@@ -89,7 +88,7 @@ module tt_um_catalinlazar_tinycore8 (
 
                     if (bitcnt == 3'd7) begin
                         pmem[load_addr] <= {shift[6:0], load_dat};
-                        load_addr       <= load_addr + 4'd1;
+                        load_addr       <= load_addr + 3'd1;
                     end
                 end
             end else if (run && ena && !halted) begin
@@ -97,7 +96,7 @@ module tt_um_catalinlazar_tinycore8 (
 
                     S_FETCH: begin
                         instr <= pmem[pc];
-                        pc    <= pc + 4'd1;
+                        pc    <= pc + 3'd1;
                         state <= S_EXEC;
                     end
 
@@ -158,13 +157,13 @@ module tt_um_catalinlazar_tinycore8 (
                             end
 
                             4'h9: begin
-                                pc    <= addr4;
+                                pc    <= addr3;
                                 state <= S_FETCH;
                             end
 
                             4'hA: begin
                                 if (zero) begin
-                                    pc <= addr4;
+                                    pc <= addr3;
                                 end
                                 state <= S_FETCH;
                             end
@@ -196,7 +195,7 @@ module tt_um_catalinlazar_tinycore8 (
                     S_IMM: begin
                         regs[imm_dst] <= pmem[pc];
                         zero          <= (pmem[pc] == 8'd0);
-                        pc            <= pc + 4'd1;
+                        pc            <= pc + 3'd1;
                         state         <= S_FETCH;
                     end
 
